@@ -10,9 +10,21 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from pathlib import Path
-from py_mini_racer import py_mini_racer
 from tqdm import tqdm
 from jsonpath import jsonpath
+
+# 尝试导入JavaScript引擎
+try:
+    from py_mini_racer import MiniRacer
+    JS_ENGINE_AVAILABLE = True
+except ImportError:
+    try:
+        import js2py
+        JS_ENGINE_AVAILABLE = True
+        JS_ENGINE_TYPE = 'js2py'
+    except ImportError:
+        JS_ENGINE_AVAILABLE = False
+        JS_ENGINE_TYPE = None
 
 from qstock.data.util import (trans_num,get_code_id,session,request_header)
 
@@ -313,25 +325,34 @@ def ths_money(flag=None,n=None):
         return ths_stock_money(n=None)
 
 def ths_header():
-    file= Path(__file__).parent/"ths.js"
-    with open(file) as f:
-        js_data = f.read()
-    js_code = py_mini_racer.MiniRacer()
-    js_code.eval(js_data)
-    v_code = js_code.call("v")
+    if JS_ENGINE_AVAILABLE:
+        try:
+            file= Path(__file__).parent/"ths.js"
+            with open(file) as f:
+                js_data = f.read()
+            js_code = MiniRacer()
+            js_code.eval(js_data)
+            v_code = js_code.call("v")
+        except Exception as e:
+            print(f"ths.js执行失败: {e}")
+            v_code = None
+    else:
+        v_code = None
+
     headers = {
         "Accept": "text/html, */*; q=0.01",
         "Accept-Encoding": "gzip, deflate",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
-        "hexin-v": v_code,
         "Host": "data.10jqka.com.cn",
         "Pragma": "no-cache",
         "Referer": "http://data.10jqka.com.cn/funds/hyzjl/",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
         "X-Requested-With": "XMLHttpRequest",
     }
+    if v_code:
+        headers["hexin-v"] = v_code
     return headers
 
 def ths_stock_money(n=None):

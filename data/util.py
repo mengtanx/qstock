@@ -8,7 +8,19 @@ import time
 import requests
 import pandas as pd
 from pathlib import Path
-from py_mini_racer import py_mini_racer
+import base64
+try:
+    from py_mini_racer import MiniRacer
+    JS_ENGINE_AVAILABLE = True
+    JS_ENGINE_TYPE = 'py_mini_racer'
+except ImportError:
+    try:
+        import js2py
+        JS_ENGINE_AVAILABLE = True
+        JS_ENGINE_TYPE = 'js2py'
+    except ImportError:
+        JS_ENGINE_AVAILABLE = False
+        JS_ENGINE_TYPE = None
 
 
 # 东方财富网网页请求头
@@ -147,9 +159,25 @@ js_str = """
             }  
 """
 random_time_str = str(int(time.time()))
-js_code = py_mini_racer.MiniRacer()
-js_code.eval(js_str)
-mcode = js_code.call("mcode", random_time_str)
+if JS_ENGINE_AVAILABLE:
+    try:
+        if JS_ENGINE_TYPE == 'js2py':
+            context = js2py.EvalJs()
+            context.execute(js_str)
+            mcode = context.mcode(random_time_str)
+        elif JS_ENGINE_TYPE == 'py_mini_racer':
+            js_code = MiniRacer()
+            js_code.eval(js_str)
+            mcode = js_code.call("mcode", random_time_str)
+        else:
+            mcode = base64.b64encode(random_time_str.encode()).decode()
+    except Exception as e:
+        print(f"JavaScript引擎执行失败: {e}")
+        # Fallback to Python implementation
+        mcode = base64.b64encode(random_time_str.encode()).decode()
+else:
+    # Use Python's built-in base64
+    mcode = base64.b64encode(random_time_str.encode()).decode()
 
 #巨潮信息网站网页请求头
 cn_headers = {
@@ -509,14 +537,31 @@ def trans_num(df, ignore_cols):
 #同花顺股票池
 
 def ths_header():
-    file= Path(__file__).parent/"ths.js"
-    with open(file) as f:
-        js_data = f.read()
-    js_code = py_mini_racer.MiniRacer()
-    js_code.eval(js_data)
-    v_code = js_code.call("v")
+    if JS_ENGINE_AVAILABLE:
+        try:
+            file= Path(__file__).parent/"ths.js"
+            with open(file) as f:
+                js_data = f.read()
+
+            if JS_ENGINE_TYPE == 'py_mini_racer':
+                js_code = MiniRacer()
+                js_code.eval(js_data)
+                v_code = js_code.call("v")
+            elif JS_ENGINE_TYPE == 'js2py':
+                # js2py不支持复杂的ths.js，需要简化处理
+                # 这里可以实现一个简化的版本或者直接返回None
+                v_code = None
+            else:
+                v_code = None
+        except Exception as e:
+            print(f"ths.js执行失败: {e}")
+            v_code = None
+    else:
+        v_code = None
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
-        "Cookie": f"v={v_code}",
     }
+    if v_code:
+        headers["Cookie"] = f"v={v_code}"
     return headers
