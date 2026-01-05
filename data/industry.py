@@ -321,12 +321,18 @@ def ths_concept_member(code= "阿里巴巴概念"):
     except Exception as e: 
        print(f'发生其他错误: {e}') 
 
-def ths_concept_data(code='白酒概念',start= "2020"):
+def ths_concept_data(code='白酒概念',start= "2020", freq='d'):
     """
     同花顺-板块-概念板块-指数数据
     http://q.10jqka.com.cn/gn/detail/code/301558/
     start: 开始年份; e.g., 2019
+    freq: 周期参数 ('d'日线, 'w'周线, 'm'月线)
     """
+    # 周期参数映射
+    period_map = {'d': '01', 'w': '11', 'm': '21'}
+    if freq not in period_map:
+        raise ValueError("freq 参数必须是 'd'(日线), 'w'(周线) 或 'm'(月线)")
+
     code_map = ths_concept_code()
     symbol_url = f"http://q.10jqka.com.cn/gn/detail/code/{code_map[code]}/"
     headers = {
@@ -340,7 +346,7 @@ def ths_concept_data(code='白酒概念',start= "2020"):
     df = pd.DataFrame()
     current_year = datetime.now().year
     for year in range(int(start), current_year + 1):
-        url = f"http://d.10jqka.com.cn/v4/line/bk_{symbol_code}/01/{year}.js"
+        url = f"http://d.10jqka.com.cn/v4/line/bk_{symbol_code}/{period_map[freq]}/{year}.js"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
             "Referer": "http://q.10jqka.com.cn",
