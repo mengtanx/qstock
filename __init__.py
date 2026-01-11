@@ -28,16 +28,16 @@ from qstock.stock.stock_pool import *
 from qstock.stock.ths_em_pool import *
 
 #回测模块
-from qstock.backtest.vec_backtest import *
-from qstock.backtest.turtle import *
-from qstock.backtest.bt_backtest import *
+#from qstock.backtest.vec_backtest import *
+#from qstock.backtest.turtle import *
+#from qstock.backtest.bt_backtest import *
 
 #问财数据
-import pywencai
+#import pywencai
 
-def wencai(query,query_type='stock'):
-    '''获取结果'''
-    result=pywencai.get(query=query,query_type=query_type)
-    return result
+#def wencai(query,query_type='stock'):
+#    '''获取结果'''
+#    result=pywencai.get(query=query,query_type=query_type)
+#    return result
     
-from qstock import wencai
+#from qstock import wencai
